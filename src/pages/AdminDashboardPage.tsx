@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useStudent } from '@/contexts/AuthContext';
 import { useVideos } from '@/hooks';
-import { compilationApi } from '@/services/api';
+import { compilationApi, videoApi } from '@/services/api';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { VideoPlayer } from '@/components/video/VideoPlayer';
@@ -30,6 +30,17 @@ export default function AdminDashboardPage() {
       prev.includes(videoId) ? prev.filter(id => id !== videoId) : [...prev, videoId]
     );
   };
+
+  const toggleSelectAll = () => {
+    if (selectedVideoIds.length === videos.length) {
+      setSelectedVideoIds([]);
+    } else {
+      setSelectedVideoIds(videos.map(v => v.id));
+    }
+  };
+
+  const isAllSelected = videos.length > 0 && selectedVideoIds.length === videos.length;
+  const isSomeSelected = selectedVideoIds.length > 0 && selectedVideoIds.length < videos.length;
 
   const handleCreateCompilation = async () => {
     if (!compilationName.trim() || selectedVideoIds.length === 0) {
@@ -72,6 +83,17 @@ export default function AdminDashboardPage() {
       fetchCompilations();
     } catch (err) {
       toast.error('Xóa thất bại');
+    }
+  };
+
+  const handleDeleteVideo = async (id: string) => {
+    if (!confirm('Xóa video này?')) return;
+    try {
+      await videoApi.delete(id);
+      toast.success('Đã xóa video');
+      refetch();
+    } catch (err) {
+      toast.error('Xóa video thất bại');
     }
   };
 
@@ -148,7 +170,19 @@ export default function AdminDashboardPage() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Lớp</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Thời lượng</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ngày tạo</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Chọn</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={isAllSelected}
+                        onChange={toggleSelectAll}
+                        className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                        aria-label={isAllSelected ? 'Bỏ chọn tất cả' : 'Chọn tất cả'}
+                      />
+                      {isSomeSelected && <span className="text-xs text-gray-500">({selectedVideoIds.length})</span>}
+                    </div>
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Thao tác</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
@@ -187,6 +221,21 @@ export default function AdminDashboardPage() {
                         onChange={() => toggleVideoSelection(video.id)}
                         className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
                       />
+                    </td>
+                    <td className="px-6 py-4">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-red-600 hover:bg-red-50"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteVideo(video.id);
+                        }}
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </Button>
                     </td>
                   </tr>
                 ))}
