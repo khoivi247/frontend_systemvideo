@@ -17,6 +17,7 @@
     "react-hot-toast": "^2.4.1",
     "react-router-dom": "^6.21.0",
     "zustand": "^4.4.7"
+    "@supabase/supabase-js": "^2.39.0"
   },
   "devDependencies": {
     "@types/react": "^18.2.43",
