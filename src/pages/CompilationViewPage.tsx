@@ -16,9 +16,11 @@ export default function CompilationViewPage() {
     setLoading(true);
     compilationApi.getByToken(token)
       .then(({ data }) => {
+        console.log('Compilation data:', data);
         setCompilation(data.compilation);
       })
       .catch((err) => {
+        console.error('Error:', err);
         setError(err.message || 'Không tìm thấy link tổng hợp');
         toast.error(err.message || 'Không tìm thấy link tổng hợp');
       })
