@@ -24,7 +24,6 @@ export default function AdminDashboardPage() {
   const [expiresInDays, setExpiresInDays] = useState(30);
   const [creatingCompilation, setCreatingCompilation] = useState(false);
   const [compilations, setCompilations] = useState<Compilation[]>([]);
-  const [loadingCompilations, setLoadingCompilations] = useState(false);
 
   const toggleVideoSelection = (videoId: string) => {
     setSelectedVideoIds(prev =>
@@ -39,7 +38,7 @@ export default function AdminDashboardPage() {
     }
     setCreatingCompilation(true);
     try {
-      const { data } = await compilationApi.create({
+      await compilationApi.create({
         name: compilationName,
         videoIds: selectedVideoIds,
         expiresInDays,
@@ -57,14 +56,11 @@ export default function AdminDashboardPage() {
   };
 
   const fetchCompilations = async () => {
-    setLoadingCompilations(true);
     try {
       const { data } = await compilationApi.list();
       setCompilations(data.data);
     } catch (err) {
       console.error('Failed to fetch compilations:', err);
-    } finally {
-      setLoadingCompilations(false);
     }
   };
 
