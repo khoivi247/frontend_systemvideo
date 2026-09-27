@@ -19,7 +19,8 @@ function PublicLayout() {
   }
 
   if (student) {
-    return <Navigate to="/dashboard" replace />;
+    const redirectPath = student.isAdmin ? '/admin' : '/dashboard';
+    return <Navigate to={redirectPath} replace />;
   }
 
   return <Outlet />;
