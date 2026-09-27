@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { compilationApi } from '@/services/api';
 import { VideoPlayer } from '@/components/video/VideoPlayer';
-import { Button } from '@/components/ui/Button';
 import type { Compilation, Video } from '@/types';
 import toast from 'react-hot-toast';
 
