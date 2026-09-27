@@ -6,6 +6,14 @@ interface StudentInfo {
   name: string;
   className: string;
   email: string;
+  isAdmin: boolean;
+}
+
+interface StudentInfoInput {
+  id: string;
+  name: string;
+  className: string;
+  email: string;
 }
 
 interface AuthContextType {
@@ -14,7 +22,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, name: string, className: string) => Promise<void>;
   signOut: () => Promise<void>;
-  setStudent: (info: StudentInfo) => void;
+  setStudent: (info: StudentInfoInput) => void;
   clearStudent: () => void;
 }
 
@@ -55,7 +63,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .single();
 
     if (data) {
-      setStudentState({ id: userId, name: data.name, className: data.class_name, email: '' });
+      const isAdmin = data.name === 'Linh Khôi Vĩ';
+      setStudentState({ id: userId, name: data.name, className: data.class_name, email: '', isAdmin });
     }
     setLoading(false);
   };
@@ -84,8 +93,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setStudentState(null);
   };
 
-  const setStudent = (info: StudentInfo) => {
-    setStudentState(info);
+  const setStudent = (info: Omit<StudentInfo, 'isAdmin'>) => {
+    const isAdmin = info.name === 'Linh Khôi Vĩ';
+    setStudentState({ ...info, isAdmin });
   };
 
   const clearStudent = () => {
