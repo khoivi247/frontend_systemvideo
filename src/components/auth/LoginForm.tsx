@@ -7,9 +7,12 @@ import { Input } from '../ui/Input';
 import toast from 'react-hot-toast';
 import { flushSync } from 'react-dom';
 
+const ADMIN_PASSCODE = '17122011';
+
 interface StudentFormData {
   name: string;
   className: string;
+  passcode?: string;
 }
 
 export function LoginForm() {
@@ -17,22 +20,34 @@ export function LoginForm() {
   const location = useLocation();
   const { setStudent } = useStudent();
   const [loading, setLoading] = useState(false);
-  const { register, handleSubmit, formState: { errors } } = useForm<StudentFormData>();
+  const [showPasscode, setShowPasscode] = useState(false);
+  const { register, handleSubmit, watch, formState: { errors } } = useForm<StudentFormData>();
+
+  const className = watch('className');
+
+  // Show passcode field when className is "admin" (case insensitive)
+  const isAdminClass = className?.toLowerCase() === 'admin';
 
   const onSubmit = (data: StudentFormData) => {
     setLoading(true);
     try {
+      const isAdmin = data.passcode === ADMIN_PASSCODE;
+      
       flushSync(() => {
         setStudent({ 
           id: `temp-${Date.now()}`, 
           name: data.name, 
           className: data.className, 
-          email: `${data.name.toLowerCase().replace(/\s+/g, '.')}@student.local` 
+          email: `${data.name.toLowerCase().replace(/\s+/g, '.')}@student.local`,
+          isAdmin,
         });
       });
-      toast.success('Chào mừng!');
-      const from = (location.state as any)?.from?.pathname || '/dashboard';
-      navigate(from, { replace: true });
+      
+      toast.success(isAdmin ? 'Chào mừng Admin!' : 'Chào mừng!');
+      
+      // Redirect: admin -> /admin, student -> /dashboard
+      const redirectPath = isAdmin ? '/admin' : '/dashboard';
+      navigate(redirectPath, { replace: true });
     } catch (err: any) {
       toast.error(err.message || 'Lỗi');
     } finally {
@@ -65,16 +80,34 @@ export function LoginForm() {
             <Input
               label="Lớp"
               type="text"
-              placeholder="Ví dụ: 12A1, CNTT-K1, DH23..."
+              placeholder="Ví dụ: 12A1, CNTT-K1, DH23... (nhập 'admin' để truy cập quản trị)"
               error={errors.className?.message}
               {...register('className', { required: 'Lớp là bắt buộc' })}
               autoComplete="off"
             />
 
+            {isAdminClass && (
+              <Input
+                label="Mã truy cập Admin"
+                type="password"
+                placeholder="Nhập mã passcode"
+                error={errors.passcode?.message}
+                {...register('passcode', { 
+                  required: 'Mã passcode là bắt buộc',
+                  minLength: { value: 1, message: 'Nhập mã passcode' },
+                })}
+                autoComplete="off"
+              />
+            )}
+
             <Button type="submit" className="w-full" loading={loading}>
               Tiếp tục
             </Button>
           </form>
+          
+          <p className="mt-4 text-center text-sm text-gray-500">
+            Nhập lớp là <strong>admin</strong> để hiện ô mã truy cập
+          </p>
         </div>
       </div>
     </div>
