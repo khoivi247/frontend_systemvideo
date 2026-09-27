@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useStudent } from '../../contexts/AuthContext';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
@@ -17,10 +17,8 @@ interface StudentFormData {
 
 export function LoginForm() {
   const navigate = useNavigate();
-  const location = useLocation();
   const { setStudent } = useStudent();
   const [loading, setLoading] = useState(false);
-  const [showPasscode, setShowPasscode] = useState(false);
   const { register, handleSubmit, watch, formState: { errors } } = useForm<StudentFormData>();
 
   const className = watch('className');
