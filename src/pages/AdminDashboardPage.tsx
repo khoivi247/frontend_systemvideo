@@ -2,10 +2,13 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useStudent } from '@/contexts/AuthContext';
 import { useVideos } from '@/hooks';
+import { compilationApi } from '@/services/api';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { VideoPlayer } from '@/components/video/VideoPlayer';
-import type { Video } from '@/types';
+import { Modal } from '@/components/ui/Modal';
+import type { Video, Compilation } from '@/types';
+import toast from 'react-hot-toast';
 
 export default function AdminDashboardPage() {
   const { student, clearStudent } = useStudent();
@@ -15,6 +18,66 @@ export default function AdminDashboardPage() {
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
   const [filterClass, setFilterClass] = useState<string>('');
   const [filterStudent, setFilterStudent] = useState<string>('');
+  const [showCompilationModal, setShowCompilationModal] = useState(false);
+  const [compilationName, setCompilationName] = useState('');
+  const [selectedVideoIds, setSelectedVideoIds] = useState<string[]>([]);
+  const [expiresInDays, setExpiresInDays] = useState(30);
+  const [creatingCompilation, setCreatingCompilation] = useState(false);
+  const [compilations, setCompilations] = useState<Compilation[]>([]);
+  const [loadingCompilations, setLoadingCompilations] = useState(false);
+
+  const toggleVideoSelection = (videoId: string) => {
+    setSelectedVideoIds(prev =>
+      prev.includes(videoId) ? prev.filter(id => id !== videoId) : [...prev, videoId]
+    );
+  };
+
+  const handleCreateCompilation = async () => {
+    if (!compilationName.trim() || selectedVideoIds.length === 0) {
+      toast.error('Vui lòng nhập tên và chọn ít nhất 1 video');
+      return;
+    }
+    setCreatingCompilation(true);
+    try {
+      const { data } = await compilationApi.create({
+        name: compilationName,
+        videoIds: selectedVideoIds,
+        expiresInDays,
+      });
+      toast.success('Tạo link tổng hợp thành công!');
+      setShowCompilationModal(false);
+      setCompilationName('');
+      setSelectedVideoIds([]);
+      fetchCompilations();
+    } catch (err: any) {
+      toast.error(err.message || 'Tạo thất bại');
+    } finally {
+      setCreatingCompilation(false);
+    }
+  };
+
+  const fetchCompilations = async () => {
+    setLoadingCompilations(true);
+    try {
+      const { data } = await compilationApi.list();
+      setCompilations(data.data);
+    } catch (err) {
+      console.error('Failed to fetch compilations:', err);
+    } finally {
+      setLoadingCompilations(false);
+    }
+  };
+
+  const handleDeleteCompilation = async (id: string) => {
+    if (!confirm('Xóa link này?')) return;
+    try {
+      await compilationApi.delete(id);
+      toast.success('Đã xóa');
+      fetchCompilations();
+    } catch (err) {
+      toast.error('Xóa thất bại');
+    }
+  };
 
   const formatDuration = (seconds?: number) => {
     if (!seconds) return 'N/A';
@@ -48,8 +111,15 @@ export default function AdminDashboardPage() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
           <h2 className="text-2xl font-bold text-gray-900">Quản lý video</h2>
-          <p className="mt-1 text-gray-600">Tổng cộng {pagination.total} video</p>
+          <p className="mt-1 text-gray-600">Tổng cộng {pagination.total} video | Đã chọn {selectedVideoIds.length} video</p>
         </div>
+
+        {selectedVideoIds.length > 0 && (
+          <div className="mb-4 p-4 bg-primary-50 border border-primary-200 rounded-lg flex items-center justify-between">
+            <span className="text-primary-700 font-medium">Đã chọn {selectedVideoIds.length} video</span>
+            <Button onClick={() => setShowCompilationModal(true)}>Tạo link tổng hợp</Button>
+          </div>
+        )}
 
         <div className="card mb-6">
           <div className="p-6">
@@ -82,6 +152,7 @@ export default function AdminDashboardPage() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Lớp</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Thời lượng</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ngày tạo</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Chọn</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
@@ -113,6 +184,14 @@ export default function AdminDashboardPage() {
                     </td>
                     <td className="px-6 py-4 text-gray-600">{formatDuration(0)}</td>
                     <td className="px-6 py-4 text-gray-600 text-sm">{new Date(video.createdAt).toLocaleDateString('vi-VN')}</td>
+                    <td className="px-6 py-4">
+                      <input
+                        type="checkbox"
+                        checked={selectedVideoIds.includes(video.id)}
+                        onChange={() => toggleVideoSelection(video.id)}
+                        className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                      />
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -137,6 +216,70 @@ export default function AdminDashboardPage() {
             </div>
           )}
         </div>
+
+        {compilations.length > 0 && (
+          <div className="mt-8">
+            <h3 className="text-xl font-bold text-gray-900 mb-4">Các link tổng hợp đã tạo</h3>
+            <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+              {compilations.map((comp) => (
+                <div key={comp.id} className="card p-4">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h4 className="font-semibold text-gray-900">{comp.name}</h4>
+                      <p className="text-sm text-gray-500 mt-1">{comp.videoCount} video • {comp.viewCount} lượt xem</p>
+                      <p className="text-xs text-gray-400 mt-1">Tạo: {new Date(comp.createdAt).toLocaleDateString('vi-VN')}</p>
+                    </div>
+                    <Button variant="ghost" size="sm" onClick={() => handleDeleteCompilation(comp.id)}>Xóa</Button>
+                  </div>
+                  <div className="mt-3 pt-3 border-t border-gray-100">
+                    <code className="text-xs bg-gray-100 px-2 py-1 rounded break-all block mb-2">
+                      {comp.shareUrl}
+                    </code>
+                    <Button variant="secondary" size="sm" className="w-full" onClick={() => navigator.clipboard.writeText(comp.shareUrl)}>
+                      Sao chép link
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <Modal isOpen={showCompilationModal} onClose={() => setShowCompilationModal(false)} title="Tạo link tổng hợp" size="lg">
+          <div className="space-y-4">
+            <Input
+              label="Tên link tổng hợp"
+              value={compilationName}
+              onChange={(e) => setCompilationName(e.target.value)}
+              placeholder="Ví dụ: Video tổng hợp lớp 12A1 - Tuần 1"
+            />
+            <div>
+              <label className="label">Hạn sử dụng (ngày)</label>
+              <Input
+                type="number"
+                value={expiresInDays}
+                onChange={(e) => setExpiresInDays(parseInt(e.target.value) || 30)}
+                min={1}
+                max={365}
+              />
+            </div>
+            <div className="max-h-60 overflow-y-auto border border-gray-200 rounded-lg p-3">
+              <p className="text-sm text-gray-600 mb-2">{selectedVideoIds.length} video đã chọn:</p>
+              <ul className="space-y-1">
+                {videos.filter(v => selectedVideoIds.includes(v.id)).map((video) => (
+                  <li key={video.id} className="text-sm flex items-center justify-between p-2 bg-gray-50 rounded">
+                    <span>{video.title}</span>
+                    <span className="text-gray-500">{video.studentName}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="flex justify-end gap-3 pt-4">
+              <Button variant="secondary" onClick={() => setShowCompilationModal(false)}>Hủy</Button>
+              <Button onClick={handleCreateCompilation} loading={creatingCompilation}>Tạo link</Button>
+            </div>
+          </div>
+        </Modal>
 
         {selectedVideo && (
           <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setSelectedVideo(null)}>
