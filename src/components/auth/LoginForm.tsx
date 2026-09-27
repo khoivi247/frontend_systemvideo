@@ -41,7 +41,7 @@ export function LoginForm() {
         });
       });
       
-      toast.success(isAdmin ? 'Chào mừng Admin!' : 'Chào mừng!');
+      toast.success(isAdmin ? 'Chào mừng Admin!' : '10a2 xin chào');
       
       // Redirect: admin -> /admin, student -> /dashboard
       const redirectPath = isAdmin ? '/admin' : '/dashboard';
@@ -66,10 +66,10 @@ export function LoginForm() {
             <Input
               label="Họ tên"
               type="text"
-              placeholder="Nguyễn Văn A"
+              placeholder="ĐẦY ĐỦ HỌ VÀ TÊN!"
               error={errors.name?.message}
               {...register('name', {
-                required: 'Họ tên là bắt buộc',
+                required: 'Họ tên là bắt buộc. nhập đầy đủ HỌ VÀ TÊN',
                 minLength: { value: 2, message: 'Tối thiểu 2 ký tự' },
               })}
               autoComplete="name"
@@ -78,7 +78,7 @@ export function LoginForm() {
             <Input
               label="Lớp"
               type="text"
-              placeholder="Ví dụ: 12A1, CNTT-K1, DH23... (nhập 'admin' để truy cập quản trị)"
+              placeholder="Ví dụ: 10a2 (nhập 'admin' để có quyền Admin)"
               error={errors.className?.message}
               {...register('className', { required: 'Lớp là bắt buộc' })}
               autoComplete="off"
@@ -91,7 +91,7 @@ export function LoginForm() {
                 placeholder="Nhập mã passcode"
                 error={errors.passcode?.message}
                 {...register('passcode', { 
-                  required: 'Mã passcode là bắt buộc',
+                  required: 'm tưởng m là t à?',
                   minLength: { value: 1, message: 'Nhập mã passcode' },
                 })}
                 autoComplete="off"
@@ -104,7 +104,7 @@ export function LoginForm() {
           </form>
           
           <p className="mt-4 text-center text-sm text-gray-500">
-            Nhập lớp là <strong>admin</strong> để hiện ô mã truy cập
+            Nhập lớp <strong>admin</strong> để log admin
           </p>
         </div>
       </div>
