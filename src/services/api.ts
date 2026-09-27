@@ -164,7 +164,6 @@ export const compilationApi = {
         name: data.name,
         token,
         video_ids: data.videoIds,
-        created_by: (await supabase.auth.getUser()).data.user?.id,
         expires_at: expiresAt,
       })
       .select()
