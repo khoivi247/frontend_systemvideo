@@ -1,6 +1,15 @@
 import { supabase } from '../lib/supabase';
 import type { Video } from '../types';
 
+function sanitizePath(str: string): string {
+  return str
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // Remove accents
+    .replace(/[^a-zA-Z0-9._-]/g, '_') // Replace special chars with _
+    .replace(/_+/g, '_') // Collapse multiple underscores
+    .replace(/^_|_$/g, ''); // Trim underscores
+}
+
 export const videoApi = {
   upload: async (
     file: File,
@@ -8,7 +17,9 @@ export const videoApi = {
   ) => {
     const fileExt = file.name.split('.').pop() || 'mp4';
     const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${fileExt}`;
-    const storagePath = `${data.className}/${data.studentName}/${fileName}`;
+    const safeClassName = sanitizePath(data.className);
+    const safeStudentName = sanitizePath(data.studentName);
+    const storagePath = `${safeClassName}/${safeStudentName}/${fileName}`;
 
     const { error: uploadError } = await supabase.storage
       .from('videos')
