@@ -14,6 +14,7 @@ interface StudentInfoInput {
   name: string;
   className: string;
   email: string;
+  isAdmin?: boolean;
 }
 
 interface AuthContextType {
@@ -63,8 +64,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .single();
 
     if (data) {
-      const isAdmin = data.name === 'Linh Khôi Vĩ';
-      setStudentState({ id: userId, name: data.name, className: data.class_name, email: '', isAdmin });
+      setStudentState({ id: userId, name: data.name, className: data.class_name, email: '', isAdmin: false });
     }
     setLoading(false);
   };
@@ -93,9 +93,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setStudentState(null);
   };
 
-  const setStudent = (info: Omit<StudentInfo, 'isAdmin'>) => {
-    const isAdmin = info.name === 'Linh Khôi Vĩ';
-    setStudentState({ ...info, isAdmin });
+  const setStudent = (info: StudentInfoInput & { isAdmin?: boolean }) => {
+    setStudentState({ ...info, isAdmin: info.isAdmin || false });
   };
 
   const clearStudent = () => {
