@@ -1,6 +1,20 @@
 import { supabase } from '../lib/supabase';
 import type { Video } from '../types';
 
+export interface Compilation {
+  id: string;
+  name: string;
+  token: string;
+  videoIds: string[];
+  createdBy: string;
+  createdAt: string;
+  expiresAt?: string;
+  isActive: boolean;
+  viewCount: number;
+  shareUrl: string;
+  videoCount: number;
+}
+
 function sanitizePath(str: string): string {
   return str
     .normalize('NFD')
@@ -134,6 +148,143 @@ export const videoApi = {
     if (error) throw error;
     const students = [...new Set(data?.map(v => v.student_name) || [])];
     return { data: { students } };
+  },
+};
+
+export const compilationApi = {
+  create: async (data: { name: string; videoIds: string[]; expiresInDays?: number }) => {
+    const token = crypto.randomUUID();
+    const expiresAt = data.expiresInDays
+      ? new Date(Date.now() + data.expiresInDays * 24 * 60 * 60 * 1000).toISOString()
+      : null;
+
+    const { data: compilation, error } = await supabase
+      .from('compilations')
+      .insert({
+        name: data.name,
+        token,
+        video_ids: data.videoIds,
+        created_by: (await supabase.auth.getUser()).data.user?.id,
+        expires_at: expiresAt,
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    const shareUrl = `${window.location.origin}/compilation/${token}`;
+
+    return {
+      data: {
+        compilation: {
+          ...compilation,
+          shareUrl,
+          videoCount: compilation.video_ids.length,
+        } as Compilation,
+      },
+    };
+  },
+
+  list: async () => {
+    const { data, error } = await supabase
+      .from('compilations')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    return {
+      data: {
+        data: data?.map(c => ({
+          ...c,
+          shareUrl: `${window.location.origin}/compilation/${c.token}`,
+          videoCount: c.video_ids.length,
+        })) || [],
+      },
+    };
+  },
+
+  get: async (id: string) => {
+    const { data, error } = await supabase
+      .from('compilations')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error) throw error;
+
+    return {
+      data: {
+        compilation: {
+          ...data,
+          shareUrl: `${window.location.origin}/compilation/${data.token}`,
+          videoCount: data.video_ids.length,
+        } as Compilation,
+      },
+    };
+  },
+
+  delete: async (id: string) => {
+    const { error } = await supabase
+      .from('compilations')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+    return { data: { message: 'Deleted' } };
+  },
+
+  getByToken: async (token: string) => {
+    const { data: compilation, error } = await supabase
+      .from('compilations')
+      .select('*')
+      .eq('token', token)
+      .eq('is_active', true)
+      .single();
+
+    if (error) throw error;
+
+    if (compilation.expires_at && new Date(compilation.expires_at) < new Date()) {
+      throw new Error('Link đã hết hạn');
+    }
+
+    // Get videos
+    const { data: videos, error: videosError } = await supabase
+      .from('videos')
+      .select('*')
+      .in('id', compilation.video_ids)
+      .order('created_at', { ascending: true });
+
+    if (videosError) throw videosError;
+
+    // Increment view count
+    await supabase
+      .from('compilations')
+      .update({ view_count: compilation.view_count + 1 })
+      .eq('id', compilation.id);
+
+    const videosWithUrl = (videos || []).map(v => ({
+      id: v.id,
+      title: v.title,
+      description: v.description,
+      filename: v.filename,
+      className: v.class_name,
+      studentName: v.student_name,
+      fileSize: v.file_size,
+      createdAt: v.created_at,
+      url: supabase.storage.from('videos').getPublicUrl(v.storage_path).data.publicUrl,
+    }));
+
+    return {
+      data: {
+        compilation: {
+          ...compilation,
+          shareUrl: `${window.location.origin}/compilation/${compilation.token}`,
+          videoCount: compilation.video_ids.length,
+          videos: videosWithUrl,
+        } as Compilation & { videos: Video[] },
+      },
+    };
   },
 };
 
