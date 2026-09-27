@@ -149,6 +149,30 @@ export const videoApi = {
     const students = [...new Set(data?.map(v => v.student_name) || [])];
     return { data: { students } };
   },
+
+  delete: async (id: string) => {
+    // First get the video to get storage path
+    const { data: video, error: fetchError } = await supabase
+      .from('videos')
+      .select('storage_path')
+      .eq('id', id)
+      .single();
+
+    if (fetchError) throw fetchError;
+
+    // Delete from storage
+    if (video?.storage_path) {
+      await supabase.storage.from('videos').remove([video.storage_path]);
+    }
+
+    // Delete from database
+    const { error } = await supabase
+      .from('videos')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+  },
 };
 
 export const compilationApi = {
