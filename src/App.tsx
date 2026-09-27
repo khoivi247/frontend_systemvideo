@@ -5,6 +5,7 @@ import LoginPage from './pages/LoginPage';
 import StudentDashboardPage from './pages/StudentDashboardPage';
 import ClassVideosPage from './pages/ClassVideosPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
+import CompilationViewPage from './pages/CompilationViewPage';
 
 function PublicLayout() {
   const { loading, student } = useStudent();
@@ -36,6 +37,8 @@ function AppRoutes() {
         <Route path="/class-videos" element={<ClassVideosPage />} />
         <Route path="/admin" element={<AdminDashboardPage />} />
       </Route>
+
+      <Route path="/compilation/:token" element={<CompilationViewPage />} />
 
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
