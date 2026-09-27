@@ -165,6 +165,7 @@ export const compilationApi = {
         token,
         video_ids: data.videoIds,
         expires_at: expiresAt,
+        is_active: true,
       })
       .select()
       .single();
