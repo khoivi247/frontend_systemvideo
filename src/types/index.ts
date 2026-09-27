@@ -10,6 +10,21 @@ export interface Video {
   url: string;
 }
 
+export interface Compilation {
+  id: string;
+  name: string;
+  token: string;
+  videoIds: string[];
+  createdBy: string;
+  createdAt: string;
+  expiresAt?: string;
+  isActive: boolean;
+  viewCount: number;
+  shareUrl: string;
+  videoCount: number;
+  videos?: Video[];
+}
+
 export interface PaginationResponse<T> {
   data: T[];
   pagination: {
